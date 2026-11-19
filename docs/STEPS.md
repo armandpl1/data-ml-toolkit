@@ -6,8 +6,8 @@ share it across repositories, and deploy to AWS.
 | Step | Name                                          | Status  |
 | ---- | --------------------------------------------- | ------- |
 | 1    | SDK foundation and shared tool pins           | Done    |
-| 2    | Adopt the toolkit in the four repos           | Planned |
-| 3    | Release automation (GitHub Releases on tags)  | Planned |
+| 2    | Adopt the toolkit in the four repos           | Review  |
+| 3    | Release automation (GitHub Releases on tags)  | Done    |
 | 4    | AWS S3 helpers                                | Done    |
 | 5    | AWS account access for CI (OIDC, Terraform)   | Planned |
 | 6    | Deploy a container to AWS (ECR + App Runner)  | Planned |
@@ -29,6 +29,8 @@ One branch per repo (`chore/data-ml-toolkit`), pushed for review, not merged:
 - `ml-claim-triage-engine` and `movie_recommendation_app`: `src/common/logging.py`
   re-exports the toolkit's logging, and config loading uses `load_yaml`
 - `sql-performance-lab` and `ecom-data-modeling-project` gain ruff 0.17.5
+- Status: pushed on all four repos, waiting for review and merge. CI runs
+  when a pull request is opened (the repos run CI on pull requests and `main`)
 
 ## 3. Release automation
 
@@ -36,6 +38,8 @@ One branch per repo (`chore/data-ml-toolkit`), pushed for review, not merged:
   version in `pyproject.toml`, runs the tests, builds the wheel and sdist,
   and attaches them to a GitHub Release
 - Repos install by tag, so a release is immutable once others depend on it
+- Verified with v0.1.0: the release workflow passed and the Release has the
+  wheel and sdist attached
 
 ## 4. AWS S3 helpers
 
