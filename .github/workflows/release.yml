@@ -1,0 +1,68 @@
+# Release: runs when a version tag (vX.Y.Z) is pushed.
+#
+#   verify tag == pyproject version ──> tests ──> build ──> GitHub Release
+#
+# Repos install the toolkit by tag, so the Release is the record of what each
+# tag contains; the wheel and sdist are attached for reference.
+#
+# Security: actions pinned to full commit SHAs, and only this job gets
+# `contents: write` (needed to create the Release).
+
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+env:
+  UV_VERSION: "0.13.7"
+  UV_LOCKED: "1"
+
+jobs:
+  release:
+    name: Build and publish GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - name: Check the tag matches the version in pyproject.toml
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="$(uv version --short)"
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::Tag $TAG does not match pyproject.toml version $version"
+            exit 1
+          fi
+
+      - name: Run tests
+        run: |
+          uv sync
+          uv run pytest
+
+      - name: Build wheel and sdist
+        run: uv build
+
+      - name: Create the GitHub Release with the built files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$TAG" \
+            --notes "See CHANGELOG.md for what changed in $TAG."
