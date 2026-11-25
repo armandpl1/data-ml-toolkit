@@ -3,16 +3,16 @@
 What this repo is for: learn to build, version and release an internal SDK,
 share it across repositories, and deploy to AWS.
 
-| Step | Name                                          | Status  |
-| ---- | --------------------------------------------- | ------- |
-| 1    | SDK foundation and shared tool pins           | Done    |
-| 2    | Adopt the toolkit in the four repos           | Review  |
-| 3    | Release automation (GitHub Releases on tags)  | Done    |
-| 4    | AWS S3 helpers                                | Done    |
-| 5    | AWS account access for CI (OIDC, Terraform)   | Planned |
-| 6    | Deploy a container to AWS (ECR + App Runner)  | Planned |
-| 7    | Reusable CI workflow shared by every repo     | Planned |
-| 8    | Grow the SDK from real duplication            | Planned |
+| Step | Name                                         | Status  |
+| ---- | -------------------------------------------- | ------- |
+| 1    | SDK foundation and shared tool pins          | Done    |
+| 2    | Adopt the toolkit in the four repos          | Review  |
+| 3    | Release automation (GitHub Releases on tags) | Done    |
+| 4    | AWS S3 helpers                               | Done    |
+| 5    | AWS account access for CI (OIDC, Terraform)  | Planned |
+| 6    | Deploy a container to AWS (ECR + App Runner) | Planned |
+| 7    | Reusable CI workflow shared by every repo    | Planned |
+| 8    | Grow the SDK from real duplication           | v0.2.0  |
 
 ## 1. SDK foundation and shared tool pins
 
@@ -74,3 +74,20 @@ One branch per repo (`chore/data-ml-toolkit`), pushed for review, not merged:
 
 Move code here only when a second repo needs it. Candidates: data-contract
 helpers (claim-triage, movie app), MLflow tracking helpers, DuckDB helpers.
+
+**First move: LLM and eval code, release v0.2.0 (built).** The plan was to
+build it in [agent-eval-lab](https://github.com/armandpl1/agent-eval-lab)
+first and move it here later. It was built here directly instead, with the
+movie app's step 8 (LLM-written explanations) as the first user, so
+agent-eval-lab and claim-triage step 9 use the toolkit from the start
+instead of growing their own copy. Scope of v0.2.0: the Anthropic provider
+only; other providers arrive with agent-eval-lab's benchmarking step.
+
+| Extra     | Module                  | What it provides                                                                                                                                                                                   |
+| --------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[llm]`   | `data_ml_toolkit.llm`   | A provider interface (Anthropic in v0.2.0; others when a repo needs them); record/replay so tests never call a model; cost and latency ledger with spending caps                                   |
+| `[evals]` | `data_ml_toolkit.evals` | Golden-dataset format with frozen splits and version hashes; repetitions, bootstrap confidence intervals, noise floor and regression detection; LLM-as-judge with calibration against human labels |
+
+Rules: the base install stays light (provider SDKs only in `[llm]`, numpy
+only in `[evals]`); no network in the toolkit's tests (fake clients and
+replayed recordings only).

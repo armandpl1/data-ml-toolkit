@@ -16,6 +16,12 @@ It does two jobs:
    - `data_ml_toolkit.config`: strict YAML loading and repo-relative paths
    - `data_ml_toolkit.s3`: upload, download and list objects in AWS S3
      (install the `aws` extra)
+   - `data_ml_toolkit.llm`: one interface for LLM calls, with record/replay
+     so tests never call a model, and a cost ledger with a spending cap
+     (install the `llm` extra for live calls)
+   - `data_ml_toolkit.evals`: golden datasets with frozen splits, bootstrap
+     intervals, regression checks against run-to-run noise, and an LLM judge
+     with calibration against human labels (install the `evals` extra)
 2. **One set of dev tool versions.** The `dev` extra pins ruff, mypy,
    pytest and pre-commit. Every repo depends on `data-ml-toolkit[dev]`
    instead of pinning them itself, so all repos lint and test with the same
@@ -28,11 +34,11 @@ The roadmap is in [docs/STEPS.md](docs/STEPS.md).
 The toolkit is installed from GitHub at a version tag; no package index needed.
 
 ```bash
-# Runtime SDK (logging, config); add [aws] for the S3 helpers
-uv add "data-ml-toolkit @ git+https://github.com/armandpl1/data-ml-toolkit@v0.1.0"
+# Runtime SDK (logging, config); add [aws], [llm] or [evals] as needed
+uv add "data-ml-toolkit[llm,evals] @ git+https://github.com/armandpl1/data-ml-toolkit@v0.2.0"
 
 # Shared dev tool versions, in place of ruff, mypy, pytest and pre-commit
-uv add --dev "data-ml-toolkit[dev] @ git+https://github.com/armandpl1/data-ml-toolkit@v0.1.0"
+uv add --dev "data-ml-toolkit[dev] @ git+https://github.com/armandpl1/data-ml-toolkit@v0.2.0"
 ```
 
 ```python
@@ -43,6 +49,45 @@ logger = get_logger(__name__)
 log_event(logger, logging.INFO, "rows_loaded", table="claims", rows=26444)
 # {"ts": "...", "level": "INFO", "logger": "...", "event": "rows_loaded", "table": "claims", "rows": 26444}
 ```
+
+## LLM calls and evals
+
+```python
+from data_ml_toolkit.llm import LLM, AnthropicProvider, Ledger, Recorded, Request
+
+llm = LLM(
+    Recorded(AnthropicProvider(), "tests/recordings", mode="auto"),
+    Ledger(cap_usd=1.00, path="reports/llm_ledger.jsonl"),
+)
+reply = llm.complete(Request(model="claude-haiku-5-5", prompt="...", effort="low"))
+```
+
+- **Record once, replay forever.** Each response is saved under a hash of
+  its request. With `mode="replay"` (the default) nothing calls a model: a
+  missing recording is an error, so CI is free and deterministic. Record
+  with `mode="record"` or `"auto"` and commit the files.
+- **Ledger.** Every call's tokens, cost and latency are logged. Live calls
+  stop with `BudgetExceeded` once `cap_usd` is spent; replays cost nothing.
+  Prices for the Claude models in use are in `llm.PRICES` (list prices, US
+  dollars per million tokens).
+- **Providers.** `AnthropicProvider` uses the official `anthropic` SDK, with
+  credentials from the environment. Anything with
+  `complete(request) -> Response` is a provider; others (OpenAI, Google,
+  Ollama) are added when a repo needs them.
+
+```python
+from data_ml_toolkit.evals import GoldenSet, Judge, calibrate, compare
+
+golden = GoldenSet.load("evals/golden.jsonl")   # hash-based dev/test split
+assert golden.version == "3f1c..."               # pin it: edits are noticed
+judge = Judge(llm, "claude-haiku-5-5", rubric="...", labels=["faithful", "unfaithful"])
+calibrate(judge_labels, human_labels).trusted()  # Cohen's kappa >= 0.6
+compare(baseline_runs, candidate_runs).verdict   # improved / regressed / no_change
+```
+
+`compare` counts a change only if its paired bootstrap interval excludes 0
+and it is bigger than the noise floor (how much the average score moves
+between repeated runs of the same system).
 
 A Docker image that installs the toolkit needs `git` in its build stage,
 because uv fetches it from GitHub.

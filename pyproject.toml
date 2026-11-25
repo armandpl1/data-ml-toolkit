@@ -1,6 +1,6 @@
 [project]
 name = "data-ml-toolkit"
-version = "0.1.0"
+version = "0.2.0"
 description = "Shared SDK and tool versions for my data engineering and ML repositories."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,15 +23,25 @@ dev = [
 aws = [
     "boto3>=1.35",
 ]
+# Live LLM calls (data_ml_toolkit.llm); replaying recordings needs nothing extra
+llm = [
+    "anthropic>=2.12",
+]
+# Golden sets, statistics, regressions and LLM judges (data_ml_toolkit.evals)
+evals = [
+    "numpy>=1.26",
+]
 
 [project.scripts]
 dmt = "data_ml_toolkit.cli:main"
 
 [dependency-groups]
 dev = [
+    "anthropic>=2.12",
     "boto3>=1.35",
     "boto3-stubs[s3]>=1.35",
     "data-ml-toolkit[dev]",
+    "numpy>=1.26",
     "types-pyyaml>=6.0",
 ]
 
