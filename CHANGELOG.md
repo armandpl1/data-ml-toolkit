@@ -2,7 +2,7 @@
 
 All notable changes, newest first. Versions follow semantic versioning.
 
-## 0.2.0 (2026-11-22)
+## 0.2.0 (2026-11-25)
 
 - `llm`: `Request`/`Response`, `AnthropicProvider` (official SDK, `llm` extra),
   `Recorded` record/replay keyed by request hash, `Ledger` with prices,

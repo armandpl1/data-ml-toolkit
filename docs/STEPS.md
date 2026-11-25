@@ -85,7 +85,7 @@ only; other providers arrive with agent-eval-lab's benchmarking step.
 
 | Extra     | Module                  | What it provides                                                                                                                                                                                   |
 | --------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[llm]`   | `data_ml_toolkit.llm`   | One interface for Anthropic, OpenAI, Google and Ollama models; record/replay so tests never call a model; cost and latency ledger with spending caps                                               |
+| `[llm]`   | `data_ml_toolkit.llm`   | A provider interface (Anthropic in v0.2.0; others when a repo needs them); record/replay so tests never call a model; cost and latency ledger with spending caps                                   |
 | `[evals]` | `data_ml_toolkit.evals` | Golden-dataset format with frozen splits and version hashes; repetitions, bootstrap confidence intervals, noise floor and regression detection; LLM-as-judge with calibration against human labels |
 
 Rules: the base install stays light (provider SDKs only in `[llm]`, numpy
